@@ -16,9 +16,9 @@
 #include <boost/asio/ip/icmp.hpp>
 #include <boost/asio/ip/udp.hpp>
 #include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/placeholders.hpp>
-#include <boost/asio/write.hpp>
 #include <boost/asio/signal_set.hpp>
+#include <boost/asio/write.hpp>
+#include <boost/asio/placeholders.hpp>
 #include <boost/enable_shared_from_this.hpp>
 
 //#include "session.h"
@@ -169,17 +169,16 @@ private:
     auto self( shared_from_this() );
     
     m_socket.async_read_some(
-      asio::buffer( 
-        m_bufReceive, max_buf_length ), 
-        [this, self]( const boost::system::error_code& ec, std::size_t length ){
-          if ( !ec ) {
-            // process buffer, then
-            start_read();
-          }
-          else {
-            // fix things and try again?
-          }
+      asio::buffer( m_bufReceive ), 
+      [this, self]( const boost::system::error_code& ec, std::size_t length ){
+        if ( !ec ) {
+          // process buffer, then
+          start_read();
         }
+        else {
+          // fix things and try again?
+        }
+      }
     );
   }
 
