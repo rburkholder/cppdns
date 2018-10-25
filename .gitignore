@@ -32,3 +32,5 @@
 *.app
 /dist/
 /build/
+/server/build/
+/server/dist/

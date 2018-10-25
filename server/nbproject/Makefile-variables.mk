@@ -9,19 +9,19 @@ CND_DISTDIR=dist
 # Debug configuration
 CND_PLATFORM_Debug=GNU-Linux
 CND_ARTIFACT_DIR_Debug=dist/Debug/GNU-Linux
-CND_ARTIFACT_NAME_Debug=cppdns
-CND_ARTIFACT_PATH_Debug=dist/Debug/GNU-Linux/cppdns
+CND_ARTIFACT_NAME_Debug=server
+CND_ARTIFACT_PATH_Debug=dist/Debug/GNU-Linux/server
 CND_PACKAGE_DIR_Debug=dist/Debug/GNU-Linux/package
-CND_PACKAGE_NAME_Debug=cppdns.tar
-CND_PACKAGE_PATH_Debug=dist/Debug/GNU-Linux/package/cppdns.tar
+CND_PACKAGE_NAME_Debug=server.tar
+CND_PACKAGE_PATH_Debug=dist/Debug/GNU-Linux/package/server.tar
 # Release configuration
 CND_PLATFORM_Release=GNU-Linux
 CND_ARTIFACT_DIR_Release=dist/Release/GNU-Linux
-CND_ARTIFACT_NAME_Release=cppdns
-CND_ARTIFACT_PATH_Release=dist/Release/GNU-Linux/cppdns
+CND_ARTIFACT_NAME_Release=server
+CND_ARTIFACT_PATH_Release=dist/Release/GNU-Linux/server
 CND_PACKAGE_DIR_Release=dist/Release/GNU-Linux/package
-CND_PACKAGE_NAME_Release=cppdns.tar
-CND_PACKAGE_PATH_Release=dist/Release/GNU-Linux/package/cppdns.tar
+CND_PACKAGE_NAME_Release=server.tar
+CND_PACKAGE_PATH_Release=dist/Release/GNU-Linux/package/server.tar
 #
 # include compiler specific variables
 #
