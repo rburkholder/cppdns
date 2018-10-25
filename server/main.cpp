@@ -80,10 +80,17 @@ private:
     // used for destroying the message for now
   }
   
-  void handle_receive( const boost::system::error_code& ec, std::size_t /*bytes_transferred*/ ) {
+  void handle_receive( const boost::system::error_code& ec, std::size_t bytes_transferred ) {
     if ( !ec ) {
       
-      std::shared_ptr<std::string> message( new std::string( "out test" ) );
+      if ( 0 != bytes_transferred ) {
+        std::string rx( m_bufReceive[ 0 ], bytes_transferred );
+        std::cout << "server udp received " << bytes_transferred << " bytes: '";
+        for ( size_t ix = 0; ix < bytes_transferred; ix++ ) std::cout << m_bufReceive[ ix ];
+        std::cout << "'" << std::endl;
+      } 
+      
+      std::shared_ptr<std::string> message( new std::string( "server out test" ) );
       
       m_socket.async_send_to(
         asio::buffer( *message ),
@@ -235,20 +242,27 @@ int main( int argc, char* argv[] ) {
   boost::asio::signal_set signals( io_context, SIGINT, SIGTERM );
   signals.async_wait( []( const boost::system::error_code& error, int signal_number ){
     if ( !error ) {
-      std::cerr << "signal " << signal_number << " received." << std::endl;
+      std::cout << "signal " << signal_number << " received." << std::endl;
     }
   } );
   
-  try   {
+  if ( 1 == argc ) {
+    
+  }
+  else {
     if (argc != 2) {
-      std::cerr << "Usage: cppdns <port> (using " << port << ")" << std::endl;;
-//      return 1;
+      std::cerr << "Usage: server <port> (default " << port << ")" << std::endl;;
+    //      return 1;
     }
     else {
       port = std::atoi(argv[1]);
     }
+    
+  }
+  std::cout << "server using port " << port << "." << std::endl;;
+  
+  try   {
 
-//    server_udp udpServer(io_service, port);
     server_tcp tcpServer( io_context, port );
     server_udp udpServer( io_context, port );
     server_icmp icmpServer( io_context );
