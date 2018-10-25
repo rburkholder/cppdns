@@ -16,8 +16,12 @@
 #include <boost/asio/ip/icmp.hpp>
 #include <boost/asio/ip/udp.hpp>
 #include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/placeholders.hpp>
+#include <boost/asio/write.hpp>
+#include <boost/asio/signal_set.hpp>
+#include <boost/enable_shared_from_this.hpp>
 
-#include "session.h"
+//#include "session.h"
 
 namespace asio = boost::asio;
 namespace ip = boost::asio::ip;
@@ -120,36 +124,107 @@ private:
 
 // https://www.boost.org/doc/libs/1_68_0/doc/html/boost_asio/overview/core/streams.html - short writes/reads
 
+// https://www.boost.org/doc/libs/1_68_0/doc/html/boost_asio/tutorial/tutdaytime3.html
+// https://www.boost.org/doc/libs/1_68_0/doc/html/boost_asio/example/cpp11/echo/async_tcp_echo_server.cpp
+
+class session: public boost::enable_shared_from_this<session> {
+public:
+  
+  typedef boost::shared_ptr<session> pointer;
+  
+  static pointer create( asio::io_context& io_context ) {
+    return pointer( new session( io_context ) );
+  }
+  
+  ip::tcp::socket& socket() { return m_socket; }
+  
+  void start() {
+    m_message = "test this";  // keep the data valid until the asynchronous operation is complete
+    
+    asio::async_write( 
+      m_socket, asio::buffer( m_message ),
+      boost::bind(
+        &session::handle_write_state, shared_from_this(),
+        asio::placeholders::error,
+        asio::placeholders::bytes_transferred
+        )
+      );
+  }
+  
+protected:
+private:
+  
+  ip::tcp::socket m_socket;
+  std::string m_message;
+  enum { max_buf_length = 1024 };
+  std::array<std::uint8_t, max_buf_length> m_bufReceive;
+  
+  session( asio::io_context& io_context )
+    : m_socket( io_context )
+  {
+  }
+  
+  void start_read() {
+    
+    auto self( shared_from_this() );
+    
+    m_socket.async_read_some(
+      asio::buffer( 
+        m_bufReceive, max_buf_length ), 
+        [this, self]( const boost::system::error_code& ec, std::size_t length ){
+          if ( !ec ) {
+            // process buffer, then
+            start_read();
+          }
+          else {
+            // fix things and try again?
+          }
+        }
+    );
+  }
+
+  void handle_write_state( const boost::system::error_code& ec, size_t bytes_transferred ) {
+    
+  }  
+  
+};
+
 
 class server_tcp {
 public:
   server_tcp( asio::io_context& io_context, short port )
-    : m_acceptor( io_context, ip::tcp::endpoint( ip::tcp::v4(), port ) ),
-      m_socket( io_context )
+    : m_acceptor( io_context, ip::tcp::endpoint( ip::tcp::v4(), port ) )
   {
-    do_accept();
+    start_accept(); // accept first connection
   }
 
 private:
   
   ip::tcp::acceptor m_acceptor;
-  ip::tcp::socket m_socket;
   
-  void do_accept() {
-    m_acceptor.async_accept( m_socket,
-        [this]( boost::system::error_code ec ) {
-          if (!ec) {
-            std::make_shared<session>( std::move( m_socket ) )->start();
-          }
-
-          // once one port started, start another acceptance
-          // no recursion here as this is in a currently open session
-          //   and making allowance for another session
-          do_accept();
-        });
+  void handle_accept( session::pointer new_connection, const boost::system::error_code& ec ) {
+    if ( !ec ) {
+      new_connection->start();  // manage existing connection
+      start_accept();  // accept another connection
+    }
+    else {
+      // repair and restart?
+    }
+  }
+  
+  void start_accept() {
+    session::pointer new_connection = session::create( m_acceptor.get_executor().context() );
+    
+    m_acceptor.async_accept( 
+      new_connection->socket(),
+      boost::bind( &server_tcp::handle_accept, this, new_connection, asio::placeholders::error )
+    );
+    
   }
 
 };
+
+//  ==============
 
 int main( int argc, char* argv[] ) {
   
