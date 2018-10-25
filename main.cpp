@@ -5,10 +5,14 @@
  * Created on October 22, 2018, 7:11 PM
  */
 
+#include <array>
+#include <memory>
+#include <string>
 #include <iostream>
 
-//#include <boost/asio.hpp>
-#include <boost/asio/io_service.hpp>
+#include <boost/bind.hpp>
+
+#include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/icmp.hpp>
 #include <boost/asio/ip/udp.hpp>
 #include <boost/asio/ip/tcp.hpp>
@@ -47,6 +51,7 @@ private:
 //  ==============
 
 // https://www.boost.org/doc/libs/1_68_0/doc/html/boost_asio/overview/networking/protocols.html
+// https://www.boost.org/doc/libs/1_68_0/doc/html/boost_asio/tutorial/tutdaytime7.html
 
 // Data may be read from or written to an unconnected UDP socket using the 
 //   receive_from(), async_receive_from(), send_to() or async_send_to() member functions. 
@@ -56,16 +61,52 @@ private:
 class server_udp {
 public:
   server_udp( asio::io_context& io_context, short port )
-    : m_endpoint( ip::udp::v4(), port ),
-      m_socket( io_context, m_endpoint ) 
+    : m_socket( io_context, ip::udp::endpoint( ip::udp::v4(), port ) ) 
     {
-      // do_accept();
+      start_receive();
     }
 protected:
 private:
   
-  ip::udp::endpoint m_endpoint;
   ip::udp::socket m_socket;
+  std::array<std::uint8_t, 1024> m_bufReceive;
+  ip::udp::endpoint m_endpointRemote; // are multiple endpoints required?
+  
+  void send_complete( std::shared_ptr<std::string> message, const boost::system::error_code& ec, std::size_t bytes_transferred ) {
+    // used for destroying the message for now
+  }
+  
+  void handle_receive( const boost::system::error_code& ec, std::size_t /*bytes_transferred*/ ) {
+    if ( !ec ) {
+      
+      std::shared_ptr<std::string> message( new std::string( "out test" ) );
+      
+      m_socket.async_send_to(
+        asio::buffer( *message ),
+        m_endpointRemote,
+        boost::bind( 
+          &server_udp::send_complete, this, 
+          message, 
+          asio::placeholders::error,
+          asio::placeholders::bytes_transferred
+        )
+      );
+      
+      start_receive();  // start over again
+    }
+  }
+  
+  void start_receive() {
+    m_socket.async_receive_from(
+      asio::buffer( m_bufReceive ),
+      m_endpointRemote,
+      boost::bind(
+        &server_udp::handle_receive, this,
+        asio::placeholders::error,
+        asio::placeholders::bytes_transferred
+      )
+    );
+  }
   
 };
 
@@ -135,6 +176,8 @@ int main( int argc, char* argv[] ) {
 
 //    server_udp udpServer(io_service, port);
     server_tcp tcpServer( io_context, port );
+    server_udp udpServer( io_context, port );
+    server_icmp icmpServer( io_context );
 
     io_context.run();
   }
