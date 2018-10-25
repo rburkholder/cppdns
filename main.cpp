@@ -32,9 +32,9 @@ namespace ip = boost::asio::ip;
 
 class server_icmp {
 public:
-  server_icmp( asio::io_service& io_service )
+  server_icmp( asio::io_context& io_context )
     : m_endpoint( ip::icmp::v4(), 0 ),
-      m_socket( io_service, m_endpoint ) 
+      m_socket( io_context, m_endpoint ) 
     {
       // do_accept();
     }
@@ -55,9 +55,9 @@ private:
 
 class server_udp {
 public:
-  server_udp( asio::io_service& io_service, short port )
+  server_udp( asio::io_context& io_context, short port )
     : m_endpoint( ip::udp::v4(), port ),
-      m_socket( io_service, m_endpoint ) 
+      m_socket( io_context, m_endpoint ) 
     {
       // do_accept();
     }
@@ -82,9 +82,9 @@ private:
 
 class server_tcp {
 public:
-  server_tcp( asio::io_service& io_service, short port )
-    : m_acceptor( io_service, ip::tcp::endpoint( ip::tcp::v4(), port ) ),
-      m_socket( io_service )
+  server_tcp( asio::io_context& io_context, short port )
+    : m_acceptor( io_context, ip::tcp::endpoint( ip::tcp::v4(), port ) ),
+      m_socket( io_context )
   {
     do_accept();
   }
@@ -112,12 +112,12 @@ private:
 
 int main( int argc, char* argv[] ) {
   
-  int port( 53 );
+  int port( 53 ); // default but can be over-written
     
-  asio::io_service io_service;
+  asio::io_context io_context;
 
   // https://www.boost.org/doc/libs/1_68_0/doc/html/boost_asio/overview/signals.html
-  boost::asio::signal_set signals( io_service, SIGINT, SIGTERM );
+  boost::asio::signal_set signals( io_context, SIGINT, SIGTERM );
   signals.async_wait( []( const boost::system::error_code& error, int signal_number ){
     if ( !error ) {
       std::cerr << "signal " << signal_number << " received." << std::endl;
@@ -134,9 +134,9 @@ int main( int argc, char* argv[] ) {
     }
 
 //    server_udp udpServer(io_service, port);
-    server_tcp tcpServer( io_service, port );
+    server_tcp tcpServer( io_context, port );
 
-    io_service.run();
+    io_context.run();
   }
   catch ( std::exception& e )   {
     std::cerr << "Exception: " << e.what() << std::endl;
